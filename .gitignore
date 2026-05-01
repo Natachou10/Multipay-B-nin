@@ -1,0 +1,19 @@
+# Backend
+multipay_backend/node_modules/
+multipay_backend/.env
+
+# Frontend (Flutter/Dart)
+multipay_frontend/.dart_tool/
+multipay_frontend/.flutter-plugins
+multipay_frontend/.flutter-plugins-dependencies
+multipay_frontend/.packages
+multipay_frontend/build/
+
+# Dossiers lourds à ignorer
+build/
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.env
