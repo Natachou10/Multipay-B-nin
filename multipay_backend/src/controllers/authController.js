@@ -1,72 +1,98 @@
-const User = require('../models/userModel');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const prisma = require('../config/prisma');
 
-// Fonction d'inscription (Register)
-exports.register = async (req, res) => {
-    try {
-        const { nom_complet, telephone, mot_de_passe } = req.body;
+// Inscription
+const inscrire = async (req, res) => {
+  console.log('Body reçu:', req.body);
+  const { nom, email, motDePasse, codePin } = req.body;
 
-        // 1. Vérifier si l'utilisateur existe déjà
-        const userExists = await User.findByPhone(telephone);
-        if (userExists) {
-            return res.status(400).json({ message: "Ce numéro de téléphone est déjà utilisé." });
-        }
+  try {
+    // Vérifier si le revendeur existe déjà
+    const existant = await prisma.revendeur.findFirst({
+      where: { email }
+    });
 
-        // 2. Crypter le mot de passe (Sécurité cruciale pour le mémoire)
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(mot_de_passe, salt);
-
-        // 3. Créer l'utilisateur en base
-        const newUser = await User.create({
-            nom_complet,
-            telephone,
-            mot_de_passe: hashedPassword
-        });
-
-        res.status(201).json({
-            success: true,
-            message: "Compte agent créé avec succès !",
-            user: newUser
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    if (existant) {
+      return res.status(400).json({ message: 'Email ou téléphone déjà utilisé' });
     }
+
+    // Valider le codePin
+    if (!/^\d{5}$/.test(codePin)) {
+      return res.status(400).json({ message: 'Le code PIN doit contenir exactement 5 chiffres' });
+    }
+
+    // Hasher mot de passe et codePin
+    const motDePasseHash = await bcrypt.hash(motDePasse, 10);
+    const codePinHash = await bcrypt.hash(codePin, 10);
+
+    // Créer le revendeur et son compte
+    const revendeur = await prisma.revendeur.create({
+      data: {
+        nom,
+        email,
+        motDePasse: motDePasseHash,
+        compte: {
+          create: {
+            codePin: codePinHash,
+            soldePrincipal: 0
+          }
+        }
+      },
+      include: { compte: true }
+    });
+
+    res.status(201).json({
+      message: 'Inscription réussie',
+      revendeur: {
+        id: revendeur.id,
+        nom: revendeur.nom,
+        email: revendeur.email,
+      }
+    });
+
+  } catch (error) {
+  console.log('ERREUR INSCRIPTION:', error.message);
+  res.status(500).json({ message: 'Erreur serveur', erreur: error.message });
+}
 };
 
-// Fonction de connexion (Login)
-exports.login = async (req, res) => {
-    try {
-        const { telephone, mot_de_passe } = req.body;
+// Connexion
+const connecter = async (req, res) => {
+  const { email, motDePasse } = req.body;
 
-        const user = await User.findByPhone(telephone);
-        if (!user) {
-            return res.status(404).json({ message: "Utilisateur non trouvé." });
-        }
+  try {
+    const revendeur = await prisma.revendeur.findUnique({ where: { email } });
 
-        const isMatch = await bcrypt.compare(mot_de_passe, user.mot_de_passe);
-        if (!isMatch) {
-            return res.status(400).json({ message: "Mot de passe incorrect." });
-        }
-
-        const token = jwt.sign(
-            { id: user.id, telephone: user.telephone },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-
-        res.status(200).json({
-            success: true,
-            message: "Connexion réussie",
-            token,
-            user: {
-                id: user.id,
-                nom_complet: user.nom_complet,
-                telephone: user.telephone
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+    if (!revendeur) {
+      return res.status(404).json({ message: 'Revendeur introuvable' });
     }
+
+    const motDePasseValide = await bcrypt.compare(motDePasse, revendeur.motDePasse);
+
+    if (!motDePasseValide) {
+      return res.status(401).json({ message: 'Mot de passe incorrect' });
+    }
+
+    const token = jwt.sign(
+      { id: revendeur.id, email: revendeur.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(200).json({
+      message: 'Connexion réussie',
+      token,
+      revendeur: {
+        id: revendeur.id,
+        nom: revendeur.nom,
+        email: revendeur.email,
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur', erreur: error.message });
+  }
 };
+
+module.exports = { inscrire, connecter };

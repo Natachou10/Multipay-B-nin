@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const transactionController = require('../controllers/transactionController');
-const auth = require('../middleware/authMiddleware');
+const { effectuerDepot, effectuerRetrait, consulterTransactions } = require('../controllers/transactionController');
+const verifierToken = require('../middlewares/authMiddleware');
 
-// Cette ligne est la plus importante : le 'auth' verrouille la route
-router.post('/add', auth, transactionController.saveTransaction);
+router.post('/depot', verifierToken, effectuerDepot);
+router.post('/retrait', verifierToken, effectuerRetrait);
+router.get('/', verifierToken, consulterTransactions);
 
 module.exports = router;

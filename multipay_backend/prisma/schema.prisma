@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Revendeur {
+  id               Int               @id @default(autoincrement())
+  nom              String
+  email            String            @unique
+  motDePasse       String
+  dateInscription  DateTime          @default(now())
+  compte           Compte?
+  comptesOperateur CompteOperateur[]
+  notifications    Notification[]
+  historiques      Historique[]
+}
+
+model Compte {
+  id             Int           @id @default(autoincrement())
+  soldePrincipal Decimal       @default(0)
+  codePin        String
+  statut         String        @default("actif")
+  dateCreation   DateTime      @default(now())
+  revendeurId    Int           @unique
+  revendeur      Revendeur     @relation(fields: [revendeurId], references: [id])
+  transactions   Transaction[]
+}
+
+model CompteOperateur {
+  id          Int       @id @default(autoincrement())
+  operateur   String
+  numero      String
+  solde       Decimal   @default(0)
+  statut      String    @default("actif")
+  revendeurId Int
+  revendeur   Revendeur @relation(fields: [revendeurId], references: [id])
+}
+
+model Transaction {
+  id         Int         @id @default(autoincrement())
+  type       String      // "depot" | "retrait"
+  montant    Decimal
+  frais      Decimal     @default(0)
+  statut     String      @default("en_attente")
+  date       DateTime    @default(now())
+  reference  String      @unique
+  compteId   Int
+  compte     Compte      @relation(fields: [compteId], references: [id])
+  historique Historique?
+}
+
+model Historique {
+  id            Int          @id @default(autoincrement())
+  typeOperation String       // "credit" | "forfait" | "depot" | "retrait" | "sbee" | "soneb" | "canal" | "scolarite"
+  montant       Decimal
+  statut        String
+  description   String?
+  date          DateTime     @default(now())
+  revendeurId   Int
+  revendeur     Revendeur    @relation(fields: [revendeurId], references: [id])
+  transactionId Int?         @unique
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+}
+
+model Forfait {
+  id          Int     @id @default(autoincrement())
+  type        String  // "appel" | "internet" | "mixte"
+  prix        Decimal
+  validite    Int
+  description String?
+  minutes     Int?
+  volumeData  String?
+}
+
+model Notification {
+  id          Int       @id @default(autoincrement())
+  titre       String
+  message     String
+  date        DateTime  @default(now())
+  lu          Boolean   @default(false)
+  revendeurId Int
+  revendeur   Revendeur @relation(fields: [revendeurId], references: [id])
+}
+
+model Parametre {
+  id          Int     @id @default(autoincrement())
+  cle         String  @unique
+  valeur      String
+  description String?
+}
+
+model SystemeOperateurs {
+  id          Int    @id @default(autoincrement())
+  nom         String
+  apiEndpoint String
+  statut      String @default("actif")
+}
+
+model TarifFrais {
+  id            Int     @id @default(autoincrement())
+  typeOperation String
+  operateur     String?
+  pourcentage   Decimal
+}
