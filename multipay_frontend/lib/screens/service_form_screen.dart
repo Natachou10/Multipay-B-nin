@@ -243,8 +243,6 @@ class _ServiceFormScreenState extends State<ServiceFormScreen> {
               isRetrait ? "CONFIRMER LA RÉCEPTION" : "CONFIRMER ET ENVOYER", 
               () {
                 // 1. On ferme d'abord le petiColor.fromARGB(255, 90, 25, 25)s (le BottomSheet)
-                Navigator.pop(context); 
-
                 // 2. On lance l'écran de succès/échec
                 Navigator.push(
                   context,

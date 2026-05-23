@@ -3,6 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:multipay_frontend/models/transaction_data.dart';
 import 'package:multipay_frontend/screens/settings_screen.dart';
 import 'service_form_screen.dart';
+import 'package:provider/provider.dart';
+import '../services/api_service.dart';
+import '../main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
@@ -14,6 +19,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   String _searchQuery = "";
   bool _isBalanceVisible = false;
+  bool _isLoading = true;
+String mtnBalance = "0";
+String moovBalance = "0";
+String celtiisBalance = "0";
+String nomCommercial = "Chargement...";
+String agentId = "BJ-00000";
+String totalProfit = "0.00";
+
+Future<void> _loadDashboardData() async {
+  setState(() => _isLoading = true);
+
+  final data = await ApiService.consulterSolde();
+
+  if (data['soldePrincipal'] != null) {
+    setState(() {
+      mtnBalance = data['soldePrincipal'].toString();
+      moovBalance = "0";
+      celtiisBalance = "0";
+      _isLoading = false;
+    });
+  } else {
+    setState(() => _isLoading = false);
+  }
+}
+void _loadAgentInfo() async {
+  final data = await ApiService.consulterProfil();
+
+  if (data['revendeur'] != null) {
+    setState(() {
+      nomCommercial = data['revendeur']['nom'] ?? 'Agent Inconnu';
+      agentId = 'BJ-${data['revendeur']['id'].toString().padLeft(3, '0')}';
+    });
+  }
+}
   final Color pureGreen = const Color(0xFF00A859);
    final List<TransactionData> _historiqueData = [
     TransactionData(
@@ -129,25 +168,77 @@ final List<TransactionData> transactions = [
     );
   }
 
+   Widget buildProfitCard() {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+    padding: const EdgeInsets.all(15),
+   decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15), // <-- Il manquait "borderRadius:" ici
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12, 
+          blurRadius: 5,
+          offset: Offset(0, 2), // Optionnel: donne un petit effet de profondeur
+        )
+      ],
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.trending_up, color: Colors.green),
+            SizedBox(width: 10),
+            Text("Mon Profit (Commissions)", style: TextStyle(fontWeight: FontWeight.w500)),
+          ],
+        ),
+        Text("$totalProfit FCFA", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green, fontSize: 16)),
+      ],
+    ),
+  );
+}
+
   // --- HEADER CLIQUABLE ---
   Widget _buildHeader() {
+    // On récupère l'état du mode sombre
+    bool isDark = Provider.of<ThemeProvider>(context).isDarkMode;
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 25),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical:20, horizontal: 15),
       decoration: BoxDecoration(
-        color: pureGreen,
-        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)] // Couleurs sombres
+              : [const Color.fromARGB(255, 9, 230, 38), const Color(0xFF55E6C1)], // Couleurs vertes (Clair)
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(15),
+          bottomRight: Radius.circular(15),
+        ),
       ),
       child: InkWell(
         onTap: () => setState(() => _selectedIndex = 3),
         child: Row(
           children: [
-            const CircleAvatar(radius: 30, backgroundColor: Colors.white24, child: Icon(Icons.person, color: Colors.white, size: 35)),
+            const CircleAvatar(
+                radius: 30,
+                backgroundColor: Colors.white24,
+                child: Icon(Icons.person, color: Colors.white, size: 35)),
             const SizedBox(width: 15),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Larisse Djochou", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20)),
-                Text("ID Agent: BJ-9920", style: TextStyle(color: Colors.white70, fontSize: 14)),
+                Text("Bienvenue  $nomCommercial",
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20)),
+                Text("ID Agent: $agentId",
+                    style: const TextStyle(color: Colors.white70, fontSize: 14)),
               ],
             ),
           ],
@@ -174,17 +265,17 @@ final List<TransactionData> transactions = [
               children: [
                 Row(
                   children: [
-                    Expanded(child: _mainServiceCard(Icons.credit_card, "Crédits", Colors.orange)),
+                    Expanded(child: _mainServiceCard(context, Icons.credit_card, "Crédits", Colors.orange)),
                     const SizedBox(width: 25),
-                    Expanded(child: _mainServiceCard(Icons.inventory_2_outlined, "Forfaits", Colors.green)),
+                    Expanded(child: _mainServiceCard(context, Icons.inventory_2_outlined, "Forfaits", Colors.green)),
                   ],
                 ),
                 const SizedBox(height: 15),
                 Row(
                   children: [
-                    Expanded(child: _mainServiceCard(Icons.arrow_downward, "Dépôts", const Color.fromARGB(255, 146, 238, 161))),
+                    Expanded(child: _mainServiceCard(context, Icons.arrow_downward, "Dépôts", const Color.fromARGB(255, 146, 238, 161))),
                     const SizedBox(width: 25),
-                    Expanded(child: _mainServiceCard(Icons.arrow_upward, "Retraits", Colors.red)),
+                    Expanded(child: _mainServiceCard(context, Icons.arrow_upward, "Retraits", Colors.red)),
                   ],
                 ),
               ],
@@ -203,10 +294,10 @@ final List<TransactionData> transactions = [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _otherServiceCircle(Icons.school, "Scolarité", Colors.blue,),
-                    _otherServiceCircle(Icons.tv, "Canal+", Colors.red),
-                    _otherServiceCircle(Icons.water_drop, "SONEB", Colors.cyan),
-                    _otherServiceCircle(Icons.electric_bolt, "SBEE", Colors.orange),
+                    _otherServiceCircle(context, Icons.school, "Scolarité", Colors.blue,),
+                    _otherServiceCircle(context, Icons.tv, "Canal+", Colors.red),
+                    _otherServiceCircle(context, Icons.water_drop, "SONEB", Colors.cyan),
+                    _otherServiceCircle(context, Icons.electric_bolt, "SBEE", Colors.orange),
                   ],
                 ),
               ],
@@ -228,9 +319,9 @@ final List<TransactionData> transactions = [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _balanceItem("MTN", "545.000", Colors.amber),
-              _balanceItem("MOOV", "210.500", Colors.green),
-              _balanceItem("CELTIIS", "85.000", Colors.blue),
+              _balanceItem("MTN", mtnBalance, Colors.amber),
+              _balanceItem("MOOV", moovBalance, Colors.green),
+              _balanceItem("CELTIIS", celtiisBalance, Colors.blue),
             ],
           ),
           const Divider(height: 35),
@@ -349,6 +440,12 @@ Widget _buildEmptySearch() {
     ),
   );
 }
+@override
+void initState() {
+  super.initState();
+  _loadDashboardData(); 
+  _loadAgentInfo(); 
+}// Charge les données du backend dès l'ouverture
 
   // WIDGET D'ITEM UNIFORMISÉ (Opérateur - Opération - Cible - Montant - Statut)
   Widget _buildTransactionItem(TransactionData tx) {
@@ -477,7 +574,7 @@ Widget _buildEmptySearch() {
   }
 
   // --- WIDGETS SERVICES ---
-  Widget _mainServiceCard(IconData icon, String label, Color color) {
+  Widget _mainServiceCard(BuildContext context,IconData icon, String label, Color color) {
     return Container(
       height: 90,
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
@@ -502,7 +599,7 @@ onTap: () {
     );
   }
 
-  Widget _otherServiceCircle(IconData icon, String label, Color color) {
+  Widget _otherServiceCircle(BuildContext context, IconData icon, String label, Color color) {
     return InkWell(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ServiceFormScreen(serviceName: label, themeColor: color))),
       child: Column(children: [
@@ -512,8 +609,4 @@ onTap: () {
       ]),
     );
   }
-
-  
-// Le design du reçu qui sera transformé en image
-
-}
+  }

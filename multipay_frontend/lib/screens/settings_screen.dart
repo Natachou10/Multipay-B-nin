@@ -1,4 +1,11 @@
 import 'package:flutter/material.dart';
+import 'profile_screen.dart';
+import 'preferences_section.dart';
+import 'change_password_screen.dart';
+import 'operator_pin_screen.dart';
+import 'account_management_screen.dart';
+import 'commissions_screen.dart';
+import 'support_info_section.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -8,259 +15,232 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // État local pour les toggles (À connecter plus tard à SharedPreferences ou Firebase)
-  bool _pushNotifications = true;
-  bool _biometricEnabled = false;
-  bool _darkMode = false;
+  bool _isDarkMode = false;
+  bool _notificationsEnabled = true;
+  String _selectedLanguage = "Français";
+  String _sessionTimeout = "15 min";
+
+  // Couleurs personnalisées pour un look Premium
+  final Color primaryGreen = const Color(0xFF00A859);
+  final Color cardDark = const Color(0xFF1E293B);
+  final Color bgDark = const Color(0xFF0F172A);
 
   @override
   Widget build(BuildContext context) {
+    bool isDark = _isDarkMode;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9), // Fond moderne bleuté très clair
-      
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 24),
-        children: [
-          // --- SECTION : MON COMPTE ---
-          _buildSectionHeader("MON COMPTE"),
-          _buildSettingsCard([
-            _buildSettingsTile(
-              icon: Icons.person_rounded,
-              iconColor: Colors.blue,
-              title: "Profil de l'Agent",
-              subtitle: "Moustapha ABDOULAYE",
-              onTap: () {},
-            ),
-            _buildSettingsDivider(),
-            _buildSettingsTile(
-              icon: Icons.store_rounded,
-              iconColor: Colors.orange,
-              title: "Ma Boutique / Agence",
-              subtitle: "Agence Cotonou-Centre",
-              onTap: () {},
-            ),
-          ]),
+      backgroundColor: isDark ? bgDark : const Color(0xFFF8FAFC),
+      appBar: AppBar(
+  title: const Text("Paramètres", style: TextStyle(fontWeight: FontWeight.bold)),
+  elevation: 0,
+  automaticallyImplyLeading: false, 
+  backgroundColor: isDark ? bgDark : Colors.white,
+  foregroundColor: isDark ? Colors.white : Colors.black,
+),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Column(
+          children: [
+            // --- SECTION MON PROFIL ---
+            _buildSectionTitle("Mon Profil", isDark),
+            _buildSettingsCard(isDark, [
+              _buildListTile(Icons.person_outline, "Nom de l'agent", "Larix Djc", isDark),
+              _buildListTile(Icons.email_outlined, "Email", "djochoularisse@gmail.com", isDark),
+              _buildListTile(Icons.location_on_outlined, "Localisation", "Cotonou, Bénin", isDark),
+              _buildListTile(Icons.description_outlined, "Description", "Agent MultiPay Principal", isDark, isLast: true),
+            ]),
 
-          const SizedBox(height: 32),
+            // --- SECTION PRÉFÉRENCES ---
+            _buildSectionTitle("Préférences", isDark),
+            _buildSettingsCard(isDark, [
+              _buildSwitchTile(Icons.dark_mode_outlined, "Mode Sombre", _isDarkMode, (val) {
+                setState(() => _isDarkMode = val);
+              }, isDark),
+              _buildListTile(Icons.language_outlined, "Langue", _selectedLanguage, isDark, onTap: () => _showLanguagePicker()),
+              _buildSwitchTile(Icons.notifications_none_outlined, "Notifications", _notificationsEnabled, (val) {
+                setState(() => _notificationsEnabled = val);
+              }, isDark, isLast: true),
+            ]),
 
-          // --- SECTION : PRÉFÉRENCES (Notifications ajoutées ici) ---
-          _buildSectionHeader("PRÉFÉRENCES"),
-          _buildSettingsCard([
-            _buildSwitchTile(
-              icon: Icons.notifications_active_rounded,
-              iconColor: Colors.purple,
-              title: "Notifications Push",
-              subtitle: "Alertes transactions & commissions",
-              value: _pushNotifications,
-              onChanged: (val) => setState(() => _pushNotifications = val),
-            ),
-            _buildSettingsDivider(),
-            _buildSwitchTile(
-              icon: Icons.dark_mode_rounded,
-              iconColor: Colors.indigo,
-              title: "Mode Sombre",
-              value: _darkMode,
-              onChanged: (val) => setState(() => _darkMode = val),
-            ),
-          ]),
+            // --- SECTION SÉCURITÉ ---
+            _buildSectionTitle("Sécurité", isDark),
+            _buildSettingsCard(isDark, [
+              _buildListTile(Icons.lock_reset_outlined, "Changer mot de passe", null, isDark, onTap: () {}),
+              _buildListTile(Icons.dialpad_outlined, "Changer code PIN (Par opérateur)", null, isDark, onTap: () {}),
+              _buildListTile(Icons.timer_outlined, "Délai d'activité", _sessionTimeout, isDark, isLast: true, onTap: () => _showTimeoutPicker()),
+            ]),
 
-          const SizedBox(height: 32),
+            // --- SECTION GESTION ---
+            _buildSectionTitle("Gestion de comptes", isDark),
+            _buildSettingsCard(isDark, [
+              _buildListTile(Icons.trending_up_outlined, "Seuils et Limites", null, isDark, onTap: () {}),
+              _buildListTile(Icons.account_balance_wallet_outlined, "Frais et Commissions", null, isDark, isLast: true, onTap: () {}),
+            ]),
 
-          // --- SECTION : SÉCURITÉ ---
-          _buildSectionHeader("SÉCURITÉ"),
-          _buildSettingsCard([
-            _buildSettingsTile(
-              icon: Icons.lock_rounded,
-              iconColor: Colors.teal,
-              title: "Changer mon code PIN",
-              onTap: () {},
-            ),
-            _buildSettingsDivider(),
-            _buildSwitchTile(
-              icon: Icons.fingerprint_rounded,
-              iconColor: Colors.blueGrey,
-              title: "Empreinte Digitale",
-              value: _biometricEnabled,
-              onChanged: (val) => setState(() => _biometricEnabled = val),
-            ),
-          ]),
+            // --- SECTION SUPPORT ---
+            _buildSectionTitle("Support & Informations", isDark),
+            _buildSettingsCard(isDark, [
+              _buildListTile(Icons.assignment_outlined, "Conditions d'utilisation", null, isDark, onTap: () {}),
+              _buildListTile(Icons.privacy_tip_outlined, "Politique de confidentialité", null, isDark, onTap: () {}),
+              _buildListTile(Icons.info_outline, "À propos", "v1.0.2", isDark, isLast: true),
+            ]),
 
-          const SizedBox(height: 32),
+            const SizedBox(height: 30),
 
-          // --- SECTION : SUPPORT ---
-          _buildSectionHeader("SUPPORT"),
-          _buildSettingsCard([
-            _buildSettingsTile(
-              icon: Icons.help_center_rounded,
-              iconColor: Colors.green,
-              title: "Aide & Centre de Support",
-              onTap: () {},
-            ),
-            _buildSettingsDivider(),
-            _buildSettingsTile(
-              icon: Icons.info_rounded,
-              iconColor: Colors.grey,
-              title: "À propos de Multipay",
-              onTap: () {},
-            ),
-          ]),
-
-          const SizedBox(height: 48),
-
-          // --- BOUTON DÉCONNEXION (En bas de page) ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: TextButton(
-              onPressed: () => _showLogoutDialog(context),
-              style: TextButton.styleFrom(
-                backgroundColor: Colors.red.withOpacity(0.08),
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.logout_rounded, color: Colors.red),
-                  SizedBox(width: 12),
-                  Text(
-                    "SE DÉCONNECTER",
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ],
+            // --- BOUTON DÉCONNEXION ---
+            Center(
+              child: TextButton.icon(
+                onPressed: () => _showLogoutDialog(),
+                icon: const Icon(Icons.logout, color: Colors.redAccent),
+                label: const Text("Déconnexion", 
+                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 16)),
               ),
             ),
-          ),
-          
-          const SizedBox(height: 24),
-          const Center(
-            child: Text(
-              "Multipay Benin - v1.0.2",
-              style: TextStyle(color: Colors.grey, fontSize: 13),
-            ),
-          ),
-          const SizedBox(height: 40),
-        ],
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
 
   // --- WIDGETS DE CONSTRUCTION ---
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionTitle(String title, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.only(left: 24, bottom: 12),
-      child: Text(
-        title,
-        style: TextStyle(
-          color: Colors.blueGrey.shade600,
-          fontWeight: FontWeight.bold,
-          fontSize: 13,
-          letterSpacing: 1.2,
-        ),
+      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 20),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(title.toUpperCase(),
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+                color: isDark ? Colors.white54 : Colors.grey.shade600)),
       ),
     );
   }
 
-  Widget _buildSettingsCard(List<Widget> children) {
+  Widget _buildSettingsCard(bool isDark, List<Widget> children) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+        color: isDark ? cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(15), // Angles arrondis pro (15px)
+border: isDark ? Border.all(color: Colors.white.withOpacity(0.05)) : null,),
       child: Column(children: children),
     );
   }
 
-  Widget _buildSettingsTile({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    String? subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildListTile(IconData icon, String title, String? trailing, bool isDark, {bool isLast = false, VoidCallback? onTap}) {
+    return Column(
+      children: [
+        ListTile(
+          onTap: onTap,
+          leading: Icon(icon, color: isDark ? primaryGreen : Colors.indigo.shade400, size: 22),
+          title: Text(title, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 15)),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (trailing != null)
+                Text(trailing, style: TextStyle(color: isDark ? Colors.white38 : Colors.grey, fontSize: 14)),
+              const SizedBox(width: 5),
+              Icon(Icons.arrow_forward_ios, size: 14, color: isDark ? Colors.white24 : Colors.grey.shade400),
+            ],
+          ),
         ),
-        child: Icon(icon, color: iconColor, size: 24),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-      subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(fontSize: 13)) : null,
-      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-      onTap: onTap,
+        if (!isLast) Divider(height: 1, indent: 55, color: isDark ? Colors.white10 : Colors.grey.shade100),
+      ],
     );
   }
 
-  Widget _buildSwitchTile({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    String? subtitle,
-    required bool value,
-    required Function(bool) onChanged,
-  }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildSwitchTile(IconData icon, String title, bool value, Function(bool) onChanged, bool isDark, {bool isLast = false}) {
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: Icon(icon, color: isDark ? primaryGreen : Colors.indigo.shade400, size: 22),
+          title: Text(title, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 15)),
+          value: value,
+          activeColor: primaryGreen,
+          onChanged: onChanged,
         ),
-        child: Icon(icon, color: iconColor, size: 24),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-      subtitle: subtitle != null ? Text(subtitle, style: const TextStyle(fontSize: 13)) : null,
-      trailing: Switch.adaptive(
-        value: value,
-        activeColor: Colors.blue,
-        onChanged: onChanged,
-      ),
+        if (!isLast) Divider(height: 1, indent: 55, color: isDark ? Colors.white10 : Colors.grey.shade100),
+      ],
     );
   }
 
-  Widget _buildSettingsDivider() {
-    return Divider(height: 1, indent: 70, endIndent: 20, color: Colors.grey.shade100);
-  }
+  // --- DIALOGUES ---
 
-  // Dialogue de confirmation de déconnexion
-  void _showLogoutDialog(BuildContext context) {
+  void _showLogoutDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: _isDarkMode ? cardDark : Colors.white,
         title: const Text("Déconnexion"),
-        content: const Text("Êtes-vous sûr de vouloir fermer votre session ?"),
+        content: const Text("Voulez-vous vraiment vous déconnecter de MultiPay ?"),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("ANNULER", style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              // Logique de déconnexion ici
-              Navigator.pop(context);
-            },
-            child: const Text("OUI, SORTIR", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("ANNULER")),
+          TextButton(onPressed: () {}, child: const Text("OUI", style: TextStyle(color: Colors.red))),
         ],
       ),
     );
   }
+
+ void _showLanguagePicker() {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: _isDarkMode ? cardDark : Colors.white,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (context) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Choisir la langue", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            _buildLanguageOption("Français", "flag_france"), // Tu pourras mettre des icônes plus tard
+            _buildLanguageOption("English", "flag_usa"),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildLanguageOption(String lang, String flag) {
+  return ListTile(
+    title: Text(lang, style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black)),
+    trailing: _selectedLanguage == lang ? Icon(Icons.check_circle, color: primaryGreen) : null,
+    onTap: () {
+      setState(() => _selectedLanguage = lang);
+      Navigator.pop(context);
+    },
+  );
+}
+
+ void _showTimeoutPicker() {
+  final List<String> options = ["15 min", "20 min", "Jamais"];
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: _isDarkMode ? cardDark : Colors.white,
+      title: const Text("Délai d'activité"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: options.map((opt) => RadioListTile<String>(
+          title: Text(opt, style: TextStyle(color: _isDarkMode ? Colors.white : Colors.black)),
+          value: opt,
+          groupValue: _sessionTimeout,
+          activeColor: primaryGreen,
+          onChanged: (val) {
+            setState(() => _sessionTimeout = val!);
+            Navigator.pop(context);
+          },
+        )).toList(),
+      ),
+    ),
+  );
+}
 }

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'dashboard_screen.dart'; // Import nécessaire pour la redirection
 
 class TransactionStatusScreen extends StatefulWidget {
   final String operator; // MTN, MOOV, CELTIIS
@@ -24,8 +25,13 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen> {
     // Redirection automatique vers le Dashboard après 3 secondes
     Timer(const Duration(seconds: 3), () {
       if (mounted) {
-        // On vide la pile et on revient à l'accueil (Dashboard)
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        // --- CORRECTION ICI ---
+        // On remplace le retour à la racine par une redirection propre vers le Dashboard
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const DashboardScreen()),
+          (route) => false, // On vide toute la pile pour éviter les retours en arrière
+        );
       }
     });
   }
@@ -64,17 +70,23 @@ class _TransactionStatusScreenState extends State<TransactionStatusScreen> {
             const SizedBox(height: 30),
             Text(
               widget.isSuccess ? "OPÉRATION RÉUSSIE" : "ÉCHEC DE L'OPÉRATION",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.bold, letterSpacing: 1.2),
             ),
             const SizedBox(height: 10),
             Text(
               "${widget.service} ${widget.operator}",
-              style: TextStyle(fontSize: 16, color: Colors.black.withOpacity(0.6)),
+              style: TextStyle(
+                  fontSize: 16, color: Colors.black.withOpacity(0.6)),
             ),
             const SizedBox(height: 50),
-            const CircularProgressIndicator(strokeWidth: 2),
+            const CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.black26),
+            ),
             const SizedBox(height: 20),
-            const Text("Retour au dashboard...", style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+            const Text("Retour au dashboard...",
+                style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
           ],
         ),
       ),

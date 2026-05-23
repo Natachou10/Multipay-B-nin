@@ -29,7 +29,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingContent> contents = [
     OnboardingContent(
-      title: "Bienvenue sur Multi-Pay",
+      title: "Bienvenue sur MultiPay-Bénin",
       image: "assets/images/slide1.png",
       description: "Gérez tous vos comptes MTN, Moov et Celtiis en un seul endroit.",
     ),

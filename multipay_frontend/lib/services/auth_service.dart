@@ -1,30 +1,25 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'api_service.dart';
 
 class AuthService {
-  // Mise à jour avec ton IP actuelle Wi-Fi 2
-  static const String baseUrl = "http://10.0.0.40:5000/api/auth";
+  // Connexion
+  static Future<Map<String, dynamic>> connecter(String email, String motDePasse) async {
+    return await ApiService.connecter(email, motDePasse);
+  }
 
-  static Future<bool> login(String telephone, String password) async {
-    try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/login"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "telephone": telephone,
-          "password": password,
-        }),
-      );
+  // Inscription
+  static Future<Map<String, dynamic>> inscrire(Map<String, dynamic> data) async {
+    return await ApiService.inscrire(data);
+  }
 
-      if (response.statusCode == 200) {
-        return true;
-      } else {
-        print("Erreur serveur: ${response.body}");
-        return false;
-      }
-    } catch (e) {
-      print("Erreur réseau (vérifie ton IP/Pare-feu): $e");
-      return false;
-    }
+  // Vérifier si connecté
+  static Future<bool> estConnecte() async {
+    final token = await ApiService.getToken();
+    return token != null;
+  }
+
+  // Déconnexion
+  static Future<void> deconnecter() async {
+    await ApiService.supprimerToken();
   }
 }
