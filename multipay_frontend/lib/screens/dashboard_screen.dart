@@ -7,6 +7,9 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'historique_screen.dart';
+import 'transactions_screen.dart';
+
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -44,7 +47,11 @@ Future<void> _loadDashboardData() async {
   }
 }
 void _loadAgentInfo() async {
+  final token = await ApiService.getToken();
+  print('TOKEN: $token');
+  
   final data = await ApiService.consulterProfil();
+  print('PROFIL DATA: $data');
 
   if (data['revendeur'] != null) {
     setState(() {
@@ -211,8 +218,7 @@ final List<TransactionData> transactions = [
         gradient: LinearGradient(
           colors: isDark
               ? [const Color(0xFF1E293B), const Color(0xFF0F172A)] // Couleurs sombres
-              : [const Color.fromARGB(255, 9, 230, 38), const Color(0xFF55E6C1)], // Couleurs vertes (Clair)
-          begin: Alignment.topLeft,
+: [const Color(0xFF00A859), const Color(0xFF78B596)],          begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: const BorderRadius.only(
@@ -353,17 +359,11 @@ final List<TransactionData> transactions = [
   }
 // --- PAGES TRANSACTIONS & HISTORIQUE (UNIFORMISÉES) ---
   Widget _buildTransactionsPage() {
-    // Filtrage des flux de caisse (Dépôts et Retraits uniquement)
-    final fluxList = _historiqueData.where((tx) => 
-      tx.service == 'Dépôts' || tx.service == 'Retraits'
-    ).toList();
-    
-    return _buildListViewPage("Flux de Caisse", fluxList);
-  }
-
-  Widget _buildHistoryPage() {
-    return _buildListViewPage("Toutes les opérations", _historiqueData);
-  }
+  return const TransactionsScreen();
+}
+Widget _buildHistoryPage() {
+  return const HistoriqueScreen();
+}
 
   Widget _buildListViewPage(String title, List<TransactionData> data) {
   // LOGIQUE DE FILTRE : On filtre la liste 'data' selon la saisie

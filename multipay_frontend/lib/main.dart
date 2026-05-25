@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // Import indispensable
 import 'screens/onboarding_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(
     // On place le Provider tout en haut pour qu'il soit accessible partout
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
-      child: const MultiPayApp(),
+      child: const MultiPayApp(), 
     ),
   );
 }
@@ -52,8 +53,20 @@ class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
   bool get isDarkMode => _isDarkMode;
 
-  void toggleTheme(bool value) {
+  ThemeProvider() {
+    _chargerTheme();
+  }
+
+  Future<void> _chargerTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isDarkMode = prefs.getBool('darkMode') ?? false;
+    notifyListeners();
+  }
+
+  Future<void> toggleTheme(bool value) async {
     _isDarkMode = value;
-    notifyListeners(); 
-  } 
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('darkMode', value);
+    notifyListeners();
+  }
 }

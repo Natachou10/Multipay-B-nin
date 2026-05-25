@@ -9,7 +9,6 @@ const consulterProfil = async (req, res) => {
       select: {
         id: true,
         nom: true,
-        telephone: true,
         email: true,
         dateInscription: true,
         compte: {

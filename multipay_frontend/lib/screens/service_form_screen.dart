@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'transaction_status_screen.dart';
+import '../services/api_service.dart';
+
 
 class ServiceFormScreen extends StatefulWidget {
   final String serviceName;
@@ -30,6 +32,8 @@ class _ServiceFormScreenState extends State<ServiceFormScreen> {
   bool get isDepot => widget.serviceName == "Dépôts";
   bool get isRetrait => widget.serviceName == "Retraits";
   bool get isPrincipal => isCredit || isForfait || isDepot || isRetrait;
+  bool _isLoading = false;
+
 
   Color get _opColor {
     if (_selectedOp == 'MTN') return Colors.amber;
@@ -75,7 +79,11 @@ class _ServiceFormScreenState extends State<ServiceFormScreen> {
           _sectionLabel("TYPE DE FORFAIT"),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [_typeBtn("INTERNET"), _typeBtn("APPEL"), _typeBtn("MAXI")],
+            children:  [
+      _typeBtn("INTERNET"),
+      _typeBtn("APPEL"),
+      _typeBtn(_selectedOp == 'MTN' ? "MAXI" : _selectedOp == 'MOOV' ? "PASSBONUS" : "MYMIX"),
+    ],
           ),
           const SizedBox(height: 25),
         ],
@@ -106,7 +114,6 @@ class _ServiceFormScreenState extends State<ServiceFormScreen> {
         TextFormField(
           controller: _amountController,
           keyboardType: TextInputType.number,
-          readOnly: isForfait, // On force le choix via les boutons pour Forfait
           decoration: _inputDeco("Saisir le montant", Icons.payments_outlined),
         ),
 
@@ -240,23 +247,69 @@ class _ServiceFormScreenState extends State<ServiceFormScreen> {
               const SizedBox(height: 25),
             ],
           _mainActionBtn(
-              isRetrait ? "CONFIRMER LA RÉCEPTION" : "CONFIRMER ET ENVOYER", 
-              () {
-                // 1. On ferme d'abord le petiColor.fromARGB(255, 90, 25, 25)s (le BottomSheet)
-                // 2. On lance l'écran de succès/échec
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TransactionStatusScreen(
-                      operator: _selectedOp,
-                      service: widget.serviceName,
-                      isSuccess: true, // Simulation de succès
-                    ),
-                  ),
-                );
-              }, 
-              color: isRetrait ? const Color.fromARGB(255, 77, 136, 9) : Colors.black
-            ),
+  isRetrait ? "CONFIRMER LA RÉCEPTION" : "CONFIRMER ET ENVOYER",
+  () async {
+    final nav = Navigator.of(context);
+    nav.pop();
+    setState(() => _isLoading = true);
+
+    Map<String, dynamic> result = {};
+
+    try {
+      if (isDepot) {
+        result = await ApiService.effectuerDepot({
+          'montant': double.parse(_amountController.text),
+          'operateur': _selectedOp,
+          'numero': _idController.text,
+        });
+      } else if (isRetrait) {
+        result = await ApiService.effectuerRetrait({
+          'montant': double.parse(_amountController.text),
+          'operateur': _selectedOp,
+          'numero': _idController.text,
+        });
+      } else if (isCredit) {
+        result = await ApiService.vendreCredit({
+          'montant': double.parse(_amountController.text),
+          'operateur': _selectedOp,
+          'numero': _idController.text,
+        });
+      } else if (isForfait) {
+        result = await ApiService.vendreForfait({
+          'forfaitId': 1,
+          'operateur': _selectedOp,
+          'numero': _idController.text,
+        });
+      } else {
+        // SBEE, SONEB, Canal+, Scolarité
+        result = await ApiService.payerService({
+          'typeService': widget.serviceName.toLowerCase().replaceAll('+', ''),
+          'montant': double.parse(_amountController.text),
+          'reference': _idController.text,
+          'details': widget.serviceName,
+        });
+      }
+    } catch (e) {
+      print('ERREUR: $e');
+    }
+
+    setState(() => _isLoading = false);
+
+    final isSuccess = result['reference'] != null || 
+                      result['message']?.contains('succès') == true;
+
+    nav.push(
+      MaterialPageRoute(
+        builder: (context) => TransactionStatusScreen(
+          operator: isPrincipal ? _selectedOp : widget.serviceName,
+          service: widget.serviceName,
+          isSuccess: isSuccess,
+        ),
+      ),
+    );
+  },
+  color: isRetrait ? const Color.fromARGB(255, 77, 136, 9) : Colors.black
+),
             const SizedBox(height: 20),
           ],
         ),

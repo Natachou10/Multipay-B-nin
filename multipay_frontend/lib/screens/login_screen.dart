@@ -64,7 +64,6 @@ void _submit() async {
       return;
     }
 
-    // Inscription
     final result = await ApiService.inscrire({
       'nom': _commercialNameController.text.trim(),
       'email': email,
@@ -75,18 +74,20 @@ void _submit() async {
     setState(() => _isLoading = false);
 
     if (result['message'] == 'Inscription réussie') {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => OtpScreen(email: email),
-    ),
-  );
-} else {
-  _showError(result['message'] ?? 'Erreur inscription');
-}
+      if (result['token'] != null) {
+        await ApiService.saveToken(result['token']);
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OtpScreen(email: email),
+        ),
+      );
+    } else {
+      _showError(result['message'] ?? 'Erreur inscription');
+    }
 
   } else {
-    // Connexion
     final result = await ApiService.connecter(email, pass);
 
     setState(() => _isLoading = false);

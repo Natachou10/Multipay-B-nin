@@ -9,6 +9,19 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
   }
+  static Future<Map<String, dynamic>> modifierDelaiActivite(Map<String, dynamic> data) async {
+  try {
+    final headers = await headersAvecToken();
+    final response = await http.patch(
+      Uri.parse(Constants.delaiActiviteUrl),
+      headers: headers,
+      body: jsonEncode(data),
+    );
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'message': 'Erreur réseau'};
+  }
+}
 
   // Sauvegarder le token
   static Future<void> saveToken(String token) async {
@@ -268,4 +281,45 @@ class ApiService {
       return {'message': 'Erreur réseau'};
     }
   }
+
+  static Future<Map<String, dynamic>> consulterSeuils() async {
+  try {
+    final headers = await headersAvecToken();
+    final response = await http.get(
+      Uri.parse(Constants.seuilsUrl),
+      headers: headers,
+    );
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'message': 'Erreur réseau'};
+  }
+}
+
+static Future<Map<String, dynamic>> modifierSeuil(Map<String, dynamic> data) async {
+  try {
+    final headers = await headersAvecToken();
+    final response = await http.post(
+      Uri.parse(Constants.seuilsUrl),
+      headers: headers,
+      body: jsonEncode(data),
+    );
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'message': 'Erreur réseau'};
+  }
+}
+
+static Future<Map<String, dynamic>> consulterFrais() async {
+  try {
+    final headers = await headersAvecToken();
+    final response = await http.get(
+      Uri.parse(Constants.fraisUrl),
+      headers: headers,
+    );
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'message': 'Erreur réseau'};
+  }
+}
+
 }

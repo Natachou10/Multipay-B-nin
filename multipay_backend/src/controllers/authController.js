@@ -8,25 +8,21 @@ const inscrire = async (req, res) => {
   const { nom, email, motDePasse, codePin } = req.body;
 
   try {
-    // Vérifier si le revendeur existe déjà
     const existant = await prisma.revendeur.findFirst({
       where: { email }
     });
 
     if (existant) {
-      return res.status(400).json({ message: 'Email ou téléphone déjà utilisé' });
+      return res.status(400).json({ message: 'Email déjà utilisé' });
     }
 
-    // Valider le codePin
     if (!/^\d{5}$/.test(codePin)) {
       return res.status(400).json({ message: 'Le code PIN doit contenir exactement 5 chiffres' });
     }
 
-    // Hasher mot de passe et codePin
     const motDePasseHash = await bcrypt.hash(motDePasse, 10);
     const codePinHash = await bcrypt.hash(codePin, 10);
 
-    // Créer le revendeur et son compte
     const revendeur = await prisma.revendeur.create({
       data: {
         nom,
@@ -42,19 +38,26 @@ const inscrire = async (req, res) => {
       include: { compte: true }
     });
 
+    const token = jwt.sign(
+      { id: revendeur.id, email: revendeur.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
     res.status(201).json({
       message: 'Inscription réussie',
+      token,
       revendeur: {
         id: revendeur.id,
         nom: revendeur.nom,
-        email: revendeur.email,
+        email: revendeur.email
       }
     });
 
   } catch (error) {
-  console.log('ERREUR INSCRIPTION:', error.message);
-  res.status(500).json({ message: 'Erreur serveur', erreur: error.message });
-}
+    console.log('ERREUR INSCRIPTION:', error.message);
+    res.status(500).json({ message: 'Erreur serveur', erreur: error.message });
+  }
 };
 
 // Connexion
