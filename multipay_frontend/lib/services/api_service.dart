@@ -112,7 +112,18 @@ class ApiService {
   return {'message': 'Erreur de connexion au serveur'};
 }
   }
-
+ static Future<Map<String, dynamic>> consulterStats() async {
+  try {
+    final headers = await headersAvecToken();
+    final response = await http.get(
+      Uri.parse(Constants.statsUrl),
+      headers: headers,
+    );
+    return jsonDecode(response.body);
+  } catch (e) {
+    return {'message': 'Erreur réseau'};
+  }
+}
   // ---- TRANSACTIONS ----
   static Future<Map<String, dynamic>> effectuerDepot(Map<String, dynamic> data) async {
     try {

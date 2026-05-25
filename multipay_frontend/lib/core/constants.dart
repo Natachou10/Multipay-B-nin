@@ -1,6 +1,6 @@
 class Constants {
   // Remplace par l'IP de ton PC
-  static const String baseUrl = 'http://10.0.0.65:5000/api';  
+  static const String baseUrl = 'http://192.168.137.1:5000/api';  
   // Auth
   static const String inscriptionUrl = '$baseUrl/auth/inscrire';
   static const String connexionUrl = '$baseUrl/auth/connecter';
@@ -36,4 +36,8 @@ class Constants {
   static const String seuilsUrl = '$baseUrl/parametres/seuils';
   static const String fraisUrl = '$baseUrl/parametres/frais';
   static const String delaiActiviteUrl = '$baseUrl/parametres/delai-activite';
+   
+
+   static const String statsUrl = '$baseUrl/stats';
+
 }

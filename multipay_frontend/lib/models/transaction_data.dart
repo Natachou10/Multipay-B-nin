@@ -8,6 +8,7 @@ class TransactionData {
   final DateTime dateTime;
   final bool isSuccess;
 
+
   TransactionData({
     required this.id,
     required this.operator,

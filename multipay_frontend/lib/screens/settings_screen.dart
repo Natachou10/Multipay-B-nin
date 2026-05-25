@@ -348,10 +348,6 @@ void _showFraisDialog() async {
             // --- SECTION PRÉFÉRENCES ---
             _buildSectionTitle("Préférences", isDark),
             _buildSettingsCard(isDark, [
-              _buildSwitchTile(Icons.dark_mode_outlined, "Mode Sombre", _isDarkMode, (val) {
-  Provider.of<ThemeProvider>(context, listen: false).toggleTheme(val);
-  setState(() => _isDarkMode = val);
-}, isDark),
               _buildListTile(Icons.language_outlined, "Langue", _selectedLanguage, isDark,
                 onTap: () => _showLanguagePicker()),
               _buildSwitchTile(Icons.notifications_none_outlined, "Notifications", _notificationsEnabled, (val) {

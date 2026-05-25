@@ -9,6 +9,7 @@ import '../main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'historique_screen.dart';
 import 'transactions_screen.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 
 class DashboardScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   String _searchQuery = "";
   bool _isBalanceVisible = false;
+  bool _isCommissionsVisible = false;
   bool _isLoading = true;
 String mtnBalance = "0";
 String moovBalance = "0";
@@ -29,9 +31,19 @@ String celtiisBalance = "0";
 String nomCommercial = "Chargement...";
 String agentId = "BJ-00000";
 String totalProfit = "0.00";
+double _commissionsJour = 0;
+double _totalCommissions = 0;
 
 Future<void> _loadDashboardData() async {
   setState(() => _isLoading = true);
+
+ final statsData = await ApiService.consulterStats();
+if (statsData['totalCommissions'] != null) {
+  setState(() {
+    _totalCommissions = statsData['totalCommissions'].toDouble();
+    _commissionsJour = statsData['commissionsJour'].toDouble();
+  });
+}
 
   final data = await ApiService.consulterSolde();
 
@@ -46,6 +58,125 @@ Future<void> _loadDashboardData() async {
     setState(() => _isLoading = false);
   }
 }
+
+void _showStatistiques() async {
+  final data = await ApiService.consulterStats();
+  
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+    builder: (context) => SizedBox(
+      height: MediaQuery.of(context).size.height * 0.85,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Center(
+              child: Text("📊 Statistiques", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            ),
+            const SizedBox(height: 20),
+
+            // Commissions par opérateur
+            const Text("COMMISSIONS", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+            _buildStatRow("💰 Commissions du jour", "${data['commissionsJour']?.toStringAsFixed(0) ?? '0'} F", Colors.green),
+            _buildStatRow("💰 Total commissions", "${data['totalCommissions']?.toStringAsFixed(0) ?? '0'} F", Colors.green),
+
+            const SizedBox(height: 20),
+            const Text("OPÉRATIONS", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+
+            // Stats par type
+            if (data['stats'] != null) ...[
+              _buildStatRow("⬇️ Dépôts", "${data['stats']['depot']?['count'] ?? 0} opérations", Colors.blue),
+              _buildStatRow("⬆️ Retraits", "${data['stats']['retrait']?['count'] ?? 0} opérations", Colors.red),
+              _buildStatRow("📱 Crédits", "${data['stats']['credit']?['count'] ?? 0} opérations", Colors.orange),
+              _buildStatRow("📶 Forfaits", "${data['stats']['forfait']?['count'] ?? 0} opérations", Colors.purple),
+              _buildStatRow("⚡ SBEE", "${data['stats']['sbee']?['count'] ?? 0} opérations", Colors.yellow.shade800),
+              _buildStatRow("💧 SONEB", "${data['stats']['soneb']?['count'] ?? 0} opérations", Colors.cyan),
+              _buildStatRow("📺 Canal+", "${data['stats']['canal']?['count'] ?? 0} opérations", Colors.deepPurple),
+              _buildStatRow("🎓 Scolarité", "${data['stats']['scolarite']?['count'] ?? 0} opérations", Colors.teal),
+            ],
+
+            const SizedBox(height: 20),
+            const Text("ÉVOLUTION (7 JOURS)", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+            const SizedBox(height: 10),
+
+            // Graphique
+            Expanded(
+              child: data['evolution'] != null
+                ? _buildGraphique(data['evolution'])
+                : const Center(child: Text("Pas de données")),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget _buildStatRow(String label, String value, Color color) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 14)),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 13)),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildGraphique(List<dynamic> evolution) {
+  return BarChart(
+    BarChartData(
+      alignment: BarChartAlignment.spaceAround,
+      maxY: evolution.map((e) => (e['montant'] as num).toDouble()).reduce((a, b) => a > b ? a : b) + 1000,
+      barGroups: evolution.asMap().entries.map((entry) {
+        return BarChartGroupData(
+          x: entry.key,
+          barRods: [
+            BarChartRodData(
+              toY: (entry.value['montant'] as num).toDouble(),
+              color: const Color(0xFF00A859),
+              width: 20,
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ],
+        );
+      }).toList(),
+      titlesData: FlTitlesData(
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            getTitlesWidget: (value, meta) {
+              return Text(
+                evolution[value.toInt()]['jour'],
+                style: const TextStyle(fontSize: 11),
+              );
+            },
+          ),
+        ),
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+      ),
+      gridData: const FlGridData(show: false),
+      borderData: FlBorderData(show: false),
+    ),
+  );
+}
+
 void _loadAgentInfo() async {
   final token = await ApiService.getToken();
   print('TOKEN: $token');
@@ -172,6 +303,18 @@ final List<TransactionData> transactions = [
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: "Paramètres"),
         ],
       ),
+       floatingActionButton: _selectedIndex == 0 
+  ? Padding(
+      padding: const EdgeInsets.only(bottom: 80),
+      child: FloatingActionButton.extended(
+        onPressed: () => _showStatistiques(),
+        backgroundColor: const Color(0xFF00A859),
+        icon: const Icon(Icons.bar_chart, color: Colors.white),
+        label: const Text("Statistiques", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+      ),
+    )
+  : null,
+floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -255,14 +398,19 @@ final List<TransactionData> transactions = [
 
   // --- PAGE ACCUEIL ---
   Widget _buildHome() {
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
+  return RefreshIndicator(
+    onRefresh: () async {
+      await _loadDashboardData();
+    },
+    child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildBalanceSection(),
+          _buildCommissionsCard(),
           const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             child: Text("SERVICES PRINCIPAUX", style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF5A717E), fontSize: 17)),
           ),
           Padding(
@@ -300,7 +448,7 @@ final List<TransactionData> transactions = [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _otherServiceCircle(context, Icons.school, "Scolarité", Colors.blue,),
+                    _otherServiceCircle(context, Icons.school, "Scolarité", Colors.blue),
                     _otherServiceCircle(context, Icons.tv, "Canal+", Colors.red),
                     _otherServiceCircle(context, Icons.water_drop, "SONEB", Colors.cyan),
                     _otherServiceCircle(context, Icons.electric_bolt, "SBEE", Colors.orange),
@@ -311,9 +459,10 @@ final List<TransactionData> transactions = [
           ),
         ],
       ),
-    );
-  }
-
+    ),
+  );
+}
+      
   // --- SECTION SOLDES ---
   Widget _buildBalanceSection() {
     return Container(
@@ -346,6 +495,54 @@ final List<TransactionData> transactions = [
       ),
     );
   }
+
+ Widget _buildCommissionsCard() {
+  return GestureDetector(
+    onTap: () => setState(() => _isCommissionsVisible = !_isCommissionsVisible),
+    child: Container(
+      margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00A859), Color(0xFF78B596)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("💰 Commissions du jour",
+                style: TextStyle(color: Colors.white70, fontSize: 13)),
+              Text(
+                _isCommissionsVisible ? "${_commissionsJour.toStringAsFixed(0)} F" : "••••••",
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              const Text("Total commissions",
+                style: TextStyle(color: Colors.white70, fontSize: 13)),
+              Text(
+                _isCommissionsVisible ? "${_totalCommissions.toStringAsFixed(0)} F" : "••••••",
+                style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          Icon(
+            _isCommissionsVisible ? Icons.visibility_off : Icons.visibility,
+            color: Colors.white70,
+            size: 20,
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
   Widget _balanceItem(String label, String amount, Color color) {
     return Column(
