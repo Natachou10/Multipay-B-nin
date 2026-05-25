@@ -4,12 +4,10 @@ const consulterStats = async (req, res) => {
   try {
     const revendeurId = req.revendeur.id;
 
-    // Compter les opérations par type
     const historique = await prisma.historique.findMany({
       where: { revendeurId }
     });
 
-    // Statistiques par type
     const stats = {};
     let totalCommissions = 0;
     let commissionsJour = 0;
@@ -23,24 +21,21 @@ const consulterStats = async (req, res) => {
       stats[type].count++;
       stats[type].montantTotal += Number(op.montant);
 
-      // Calculer commissions selon le type
       let taux = 0;
       if (type === 'depot') taux = 0.006;
       else if (type === 'retrait') taux = 0.03;
       else if (type === 'credit' || type === 'forfait') taux = 0.05;
-      else taux = 0.05; // autres services
+      else taux = 0.05;
 
       const commission = Number(op.montant) * taux;
       stats[type].commissions += commission;
       totalCommissions += commission;
 
-      // Commissions du jour
       if (new Date(op.date).toDateString() === aujourd_hui) {
         commissionsJour += commission;
       }
     }
 
-    // Évolution sur les 7 derniers jours
     const evolution = [];
     for (let i = 6; i >= 0; i--) {
       const date = new Date();
@@ -66,7 +61,6 @@ const consulterStats = async (req, res) => {
       stats,
       evolution
     });
-
   } catch (error) {
     res.status(500).json({ message: 'Erreur serveur', erreur: error.message });
   }

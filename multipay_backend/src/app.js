@@ -13,7 +13,8 @@ const vendreRoutes = require('./routes/vendreRoutes');
 const autresServicesRoutes = require('./routes/autresServicesRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const parametreRoutes = require('./routes/parametreRoutes');
-
+const statsRoutes = require('./routes/statsRoutes');
+const { demarrerCron } = require('./services/cronService');
 
 
 app.use('/api/auth', authRoutes);
@@ -24,10 +25,13 @@ app.use('/api/vendre', vendreRoutes);
 app.use('/api/services', autresServicesRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/parametres', parametreRoutes);
+app.use('/api/stats', statsRoutes);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
+  demarrerCron();
 });
 
 module.exports = app;
