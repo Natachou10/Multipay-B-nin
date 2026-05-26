@@ -133,17 +133,11 @@ void _showSuccess(String msg) {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  height: 70,
-                  width: 70,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    gradient: const LinearGradient(
-                        colors: [Color(0xFF2D764F), Color(0xFFD34C4C)]),
-                  ),
-                  child: const Icon(Icons.account_balance_wallet_outlined,
-                      color: Colors.white, size: 40),
-                ),
+                   Image.asset(
+                         'assets/images/logo.png',
+                                height: 100,
+                                width: 100,
+                              ),
                 const SizedBox(height: 20),
                 const Text("MultiPay-Bénin",
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
