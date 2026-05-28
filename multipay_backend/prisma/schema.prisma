@@ -58,6 +58,7 @@ model Historique {
   montant       Decimal
   statut        String
   description   String?
+  operateur     String?
   date          DateTime     @default(now())
   revendeurId   Int
   revendeur     Revendeur    @relation(fields: [revendeurId], references: [id])

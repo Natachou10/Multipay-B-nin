@@ -41,6 +41,7 @@ const vendreCredit = async (req, res) => {
           montant,
           statut: 'confirme',
           description: `Vente crédit ${operateur} - ${numero}`,
+          operateur: operateur,
           revendeurId: req.revendeur.id
         }
       });
@@ -109,6 +110,7 @@ const vendreForfait = async (req, res) => {
           montant: Number(forfait.prix),
           statut: 'confirme',
           description: `Vente forfait ${forfait.type} ${operateur} - ${numero}`,
+          operateur: operateur,
           revendeurId: req.revendeur.id
         }
       });

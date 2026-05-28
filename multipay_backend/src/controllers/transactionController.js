@@ -51,6 +51,7 @@ const effectuerDepot = async (req, res) => {
           montant,
           statut: 'confirme',
           description: `Dépôt via ${operateur} - ${numero}`,
+           operateur: operateur,
           revendeurId: req.revendeur.id,
           transactionId: nouvelleTransaction.id
         }
@@ -127,6 +128,7 @@ const effectuerRetrait = async (req, res) => {
           montant,
           statut: 'confirme',
           description: `Retrait via ${operateur} - ${numero}`,
+           operateur: operateur,
           revendeurId: req.revendeur.id,
           transactionId: nouvelleTransaction.id
         }
